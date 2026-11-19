@@ -104,11 +104,15 @@ pub fn linkWithZigCc(
     defer argv.deinit(alloc);
 
     try argv.appendSlice(alloc, &.{ constants.TestSteps.zig_bin, "cc" });
+    if (task.target.len > 0 and !std.mem.eql(u8, task.target, constants.Defaults.native_target)) {
+        try argv.appendSlice(alloc, &.{ "-target", task.target });
+    }
     if (shared) try argv.append(alloc, "-shared");
     if (task.strip) try argv.append(alloc, "-s");
     if (task.lto) try argv.append(alloc, "-flto");
 
-    const is_macos = std.mem.indexOf(u8, task.target, "macos") != null;
+    const is_macos = std.mem.indexOf(u8, task.target, "macos") != null or
+        (std.mem.eql(u8, task.target, constants.Defaults.native_target) and @import("builtin").os.tag == .macos);
     if (is_macos) {
         for (archives) |a| {
             try argv.append(alloc, "-Wl,-force_load");

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build (and optionally install) hive on macOS (Apple Silicon / Intel).
+# Build (and optionally install) hive on macOS (Apple Silicon / aarch64-macos).
 # Usage:
 #   ./scripts/build-macos.sh [--target <zig-triple>] [--optimize <mode>] [--install] [--prefix <dir>]
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-TARGET="${HIVE_TARGET:-native}"
+TARGET="${HIVE_TARGET:-aarch64-macos}"
 OPTIMIZE="${HIVE_OPTIMIZE:-ReleaseSafe}"
 DO_INSTALL=0
 PREFIX="${HIVE_PREFIX:-$HOME/.local}"
