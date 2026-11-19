@@ -20,10 +20,10 @@ jobs:
           - name: linux-x86_64
             os: ubuntu-latest
             build_cmd: ./scripts/build-linux.sh
-          # Deshabilitados temporalmente hasta completar el soporte de plataforma
-          # - name: macos-aarch64
-          #   os: macos-14
-          #   build_cmd: ./scripts/build-macos.sh
+          - name: macos-aarch64
+            os: macos-14
+            build_cmd: ./scripts/build-macos.sh
+          # Deshabilitado temporalmente hasta completar el soporte de plataforma
           # - name: windows-x86_64
           #   os: windows-latest
           #   build_cmd: pwsh -File ./scripts/build-windows.ps1
@@ -45,10 +45,6 @@ jobs:
         uses: mlugg/setup-zig@v2
         with:
           version: ${{ vars.ZIG_VERSION || env.ZIG_VERSION }}
-
-      - name: Install SQLite dev headers (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Build & Test
         working-directory: hive

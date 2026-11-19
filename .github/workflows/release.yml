@@ -24,12 +24,12 @@ jobs:
             asset_suffix: linux-x86_64
             bin_name: hive
             asset_name: hive-linux-x86_64
-          # Deshabilitados temporalmente hasta completar el soporte de plataforma
-          # - os: macos-14
-          #   target: aarch64-macos
-          #   asset_suffix: macos-aarch64
-          #   bin_name: hive
-          #   asset_name: hive-macos-aarch64
+          - os: macos-14
+            target: aarch64-macos
+            asset_suffix: macos-aarch64
+            bin_name: hive
+            asset_name: hive-macos-aarch64
+          # Deshabilitado temporalmente hasta completar el soporte de plataforma
           # - os: windows-latest
           #   target: x86_64-windows-gnu
           #   asset_suffix: windows-x86_64
@@ -53,10 +53,6 @@ jobs:
         uses: mlugg/setup-zig@v2
         with:
           version: ${{ vars.ZIG_VERSION || env.ZIG_VERSION }}
-
-      - name: Install SQLite dev headers (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Test
         working-directory: hive
