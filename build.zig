@@ -29,7 +29,7 @@ pub fn build(b: *std.Build) void {
     const trace_jsonl_mod = ext_dep.module("ext_trace_jsonl");
 
     const build_opts = b.addOptions();
-    build_opts.addOption([]const u8, "version", "0.1.0");
+    build_opts.addOption([]const u8, "version", "2.0.2");
     const build_opts_mod = build_opts.createModule();
 
     const hive_mod = b.createModule(.{

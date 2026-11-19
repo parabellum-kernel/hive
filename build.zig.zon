@@ -1,6 +1,6 @@
 .{
     .name = .hive,
-    .version = "0.1.0",
+    .version = "2.0.2",
     .fingerprint = 0xdc6dbbf8c4aa4f4e,
     .minimum_zig_version = "0.17.1",
     .dependencies = .{
