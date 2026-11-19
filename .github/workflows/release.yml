@@ -24,7 +24,7 @@ jobs:
             asset_suffix: linux-x86_64
             bin_name: hive
             asset_name: hive-linux-x86_64
-          - os: macos-14
+          - os: macos-15
             target: aarch64-macos
             asset_suffix: macos-aarch64
             bin_name: hive
