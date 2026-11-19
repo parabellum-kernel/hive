@@ -9,4 +9,5 @@ test {
     _ = @import("build_test.zig");
     _ = @import("add_test.zig");
     _ = @import("release_test.zig");
+    _ = @import("config_test.zig");
 }

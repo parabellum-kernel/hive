@@ -51,6 +51,40 @@ pub fn main(init: std.process.Init) !u8 {
         }
     }
 
+    const target_dir = if (parsed.positionals.items.len > 0)
+        parsed.positionals.items[0]
+    else
+        (global_opts.cwd orelse ".");
+
+    const native_fs = hive.platform.fs.nativeFs();
+    const native_env = hive.platform.env.nativeEnv();
+    const project_dotenv = try hive.config.dotenv.loadDotEnvFile(arena, native_fs, target_dir);
+    var resolved_home_for_env = try hive.config.HiveHome.resolve(arena, native_env, .{
+        .artifact_repository_dir = global_opts.artifact_repository_dir,
+        .templates_dir = global_opts.templates_dir,
+    });
+    defer resolved_home_for_env.deinit(arena);
+    const global_dotenv = try hive.config.dotenv.loadDotEnvFile(arena, native_fs, resolved_home_for_env.base_dir);
+
+    if (!std_term.opts.no_color) {
+        if (native_env.getEnv(arena, hive.constants.EnvVar.NO_COLOR.key())) |nc| {
+            defer arena.free(nc);
+            if (nc.len > 0) std_term.opts.no_color = true;
+        }
+    }
+
+    for (requested_goals.items) |g| {
+        if (g == .config) {
+            return try hive.config.inspect.runConfigCommand(arena, term, target_dir, global_opts, .{
+                .global = parsed.hasFlag(hive.cli.ConfigFlag.global.flagName()),
+                .set_vars = parsed.getValues(hive.cli.ConfigFlag.set.flagName()),
+                .unset_keys = parsed.getValues(hive.cli.ConfigFlag.unset.flagName()),
+                .project_dotenv = project_dotenv,
+                .global_dotenv = global_dotenv,
+            });
+        }
+    }
+
     const plan = hive.pipeline.planExecution(
         arena,
         requested_goals.items,
@@ -62,11 +96,6 @@ pub fn main(init: std.process.Init) !u8 {
         return 2;
     };
     defer arena.free(plan);
-
-    const target_dir = if (parsed.positionals.items.len > 0)
-        parsed.positionals.items[0]
-    else
-        (global_opts.cwd orelse ".");
 
     var packed_vars: std.ArrayListUnmanaged(u8) = .empty;
     defer packed_vars.deinit(arena);

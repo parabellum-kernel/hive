@@ -234,6 +234,7 @@ fn makeLinearSubPipeline(
 
 fn buildGoalPipelineDecl(arena: std.mem.Allocator, goal: cli.Goal, opts: PlanOptions) !?ast.PipelineDecl {
     return switch (goal) {
+        .config => null,
         .clean => try makeLinearSubPipeline(
             arena,
             goal.name(),

@@ -2,6 +2,26 @@
 
 `hive` reads environment variables for configuration, authentication, build scripts, and kernel telemetry (OpenTelemetry and JSON Lines tracing).
 
+## `.env` Support & Precedence
+
+`hive` automatically loads `.env` files at startup (ignored by Git via `.gitignore`):
+
+1. **Process environment** (highest precedence — never overwritten)
+2. **Project `.env`** (`<project_dir>/.env` or `--cwd` `.env`)
+3. **Global `.env`** (`~/.hive/.env`, or `$HIVE_HOME/.env`)
+
+Use `hive config` to inspect or edit environment variables:
+
+```bash
+hive config                                   # Inspect project & global configuration
+hive config --json                            # Machine-readable JSON output
+hive config --global                          # Inspect global ~/.hive/.env & HiveHome
+hive config --set HIVE_WORKERS=8              # Set in project .env
+hive config --global --set HIVE_WORKERS=8     # Set in global ~/.hive/.env
+hive config --unset HIVE_WORKERS              # Remove from project .env
+hive config --global --unset HIVE_WORKERS     # Remove from global ~/.hive/.env
+```
+
 ---
 
 ## 1. Core & Runtime

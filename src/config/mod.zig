@@ -1,5 +1,7 @@
 pub const hive_home = @import("hive_home.zig");
 pub const hive_json = @import("hive_json.zig");
+pub const dotenv = @import("dotenv.zig");
+pub const inspect = @import("inspect.zig");
 
 pub const HiveHome = hive_home.HiveHome;
 pub const PackageManifest = hive_home.PackageManifest;

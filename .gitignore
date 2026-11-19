@@ -4,6 +4,10 @@ zig-cache/
 zig-out/
 zig-pkg/
 
+# Environment files (may contain secrets)
+.env
+.env.*
+
 # OS & editor files
 .DS_Store
 Thumbs.db

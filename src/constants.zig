@@ -23,6 +23,9 @@ pub const EnvVar = enum {
     GITHUB_TOKEN,
     HIVE_GITHUB_TOKEN,
     HIVE_HTTP_TOKEN,
+    PARABELLUM_OTEL_FILE,
+    PARABELLUM_OTEL_CONSOLE,
+    PARABELLUM_TRACE_OUT,
 
     pub fn key(self: EnvVar) []const u8 {
         return @tagName(self);

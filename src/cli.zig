@@ -12,6 +12,7 @@ pub const GoalCategory = enum {
 };
 
 pub const Goal = enum {
+    config,
     init,
     add,
     clean,
@@ -30,7 +31,7 @@ pub const Goal = enum {
 
     pub fn category(self: Goal) GoalCategory {
         return switch (self) {
-            .init, .add => .standalone,
+            .config, .init, .add => .standalone,
             .clean, .fetch, .docs, .release => .opt_in,
             .build, .@"test", .package, .install, .publish => .core_linear,
         };
@@ -50,6 +51,7 @@ pub const Goal = enum {
 
     pub fn description(self: Goal) []const u8 {
         return switch (self) {
+            .config => "Inspect or edit project/global environment configuration",
             .init => "Scaffold a new project from a template",
             .add => "Add a dependency to build.zig.zon or hive.json",
             .clean => "Remove Zig build caches (and optionally zig-out / snapshots)",
@@ -229,6 +231,16 @@ pub const PackageFlag = enum {
     }
 };
 
+pub const ConfigFlag = enum {
+    global,
+    set,
+    unset,
+
+    pub fn flagName(comptime self: ConfigFlag) []const u8 {
+        return constants.enumToKebab(self);
+    }
+};
+
 pub const GlobalOptions = struct {
     artifact_repository_dir: ?[]const u8 = null,
     templates_dir: ?[]const u8 = null,
@@ -300,6 +312,11 @@ pub fn buildCliApp(alloc: std.mem.Allocator) !sdk_cli.CliApp {
 
     inline for (std.enums.values(Goal)) |g| {
         const opts: []const sdk_cli.OptionSpec = comptime switch (g) {
+            .config => &.{
+                sdk_cli.OptionSpec.fromEnum(ConfigFlag.global, 'g', .flag, null, "Target global ~/.hive/.env instead of project .env"),
+                sdk_cli.OptionSpec.fromEnum(ConfigFlag.set, null, .multi_value, "<KEY=VALUE>", "Set or update an environment variable in .env"),
+                sdk_cli.OptionSpec.fromEnum(ConfigFlag.unset, null, .multi_value, "<KEY>", "Remove an environment variable from .env"),
+            },
             .init => &.{
                 sdk_cli.OptionSpec.fromEnum(InitFlag.template, 't', .value, "<tpl>", "Template name, local path, or Git URL"),
                 sdk_cli.OptionSpec.fromEnum(InitFlag.dir, null, .value, "<path>", "Destination directory (default: ./<name>)"),
