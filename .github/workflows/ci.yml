@@ -19,18 +19,14 @@ jobs:
         include:
           - name: linux-x86_64
             os: ubuntu-latest
-            enabled: true
             build_cmd: ./scripts/build-linux.sh
           # Deshabilitados temporalmente hasta completar el soporte de plataforma
-          - name: macos-aarch64
-            os: macos-14
-            enabled: false
-            build_cmd: ./scripts/build-macos.sh
-          - name: windows-x86_64
-            os: windows-latest
-            enabled: false
-            build_cmd: pwsh -File ./scripts/build-windows.ps1
-    if: ${{ matrix.enabled }}
+          # - name: macos-aarch64
+          #   os: macos-14
+          #   build_cmd: ./scripts/build-macos.sh
+          # - name: windows-x86_64
+          #   os: windows-latest
+          #   build_cmd: pwsh -File ./scripts/build-windows.ps1
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout hive

@@ -20,25 +20,21 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            enabled: true
             target: x86_64-linux-gnu
             asset_suffix: linux-x86_64
             bin_name: hive
             asset_name: hive-linux-x86_64
           # Deshabilitados temporalmente hasta completar el soporte de plataforma
-          - os: macos-14
-            enabled: false
-            target: aarch64-macos
-            asset_suffix: macos-aarch64
-            bin_name: hive
-            asset_name: hive-macos-aarch64
-          - os: windows-latest
-            enabled: false
-            target: x86_64-windows-gnu
-            asset_suffix: windows-x86_64
-            bin_name: hive.exe
-            asset_name: hive-windows-x86_64.exe
-    if: ${{ matrix.enabled }}
+          # - os: macos-14
+          #   target: aarch64-macos
+          #   asset_suffix: macos-aarch64
+          #   bin_name: hive
+          #   asset_name: hive-macos-aarch64
+          # - os: windows-latest
+          #   target: x86_64-windows-gnu
+          #   asset_suffix: windows-x86_64
+          #   bin_name: hive.exe
+          #   asset_name: hive-windows-x86_64.exe
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout hive
