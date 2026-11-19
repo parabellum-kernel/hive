@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  ZIG_VERSION: "0.17.1"
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-latest
+            enabled: true
+            build_cmd: ./scripts/build-linux.sh
+          # Deshabilitados temporalmente hasta completar el soporte de plataforma
+          - name: macos-aarch64
+            os: macos-14
+            enabled: false
+            build_cmd: ./scripts/build-macos.sh
+          - name: windows-x86_64
+            os: windows-latest
+            enabled: false
+            build_cmd: pwsh -File ./scripts/build-windows.ps1
+    if: ${{ matrix.enabled }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout hive
+        uses: actions/checkout@v4
+        with:
+          path: hive
+
+      - name: Checkout engine (private)
+        uses: actions/checkout@v4
+        with:
+          repository: parabellum-kernel/engine
+          token: ${{ secrets.ENGINE_REPO_TOKEN }}
+          path: engine
+
+      - name: Setup Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: ${{ vars.ZIG_VERSION || env.ZIG_VERSION }}
+
+      - name: Install SQLite dev headers (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - name: Build & Test
+        working-directory: hive
+        shell: bash
+        run: |
+          ${{ matrix.build_cmd }}
+          zig build test
