@@ -37,6 +37,8 @@ These flags are not strictly global to every goal, but share identical semantics
 
 ## 3. Environment Variables
 
+See [env-vars.md](env-vars.md) for the complete reference (including authentication, OpenTelemetry/JSONL tracing, and build script variables).
+
 | Variable | Default | Description |
 |---|---|---|
 | `HIVE_HOME` | `~/.hive` | Base directory for `packages/` and `templates/`. Overridden by `--artifact-repository-dir` and `--templates-dir`. |
