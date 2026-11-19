@@ -1,0 +1,14 @@
+# Zig build & cache directories
+.zig-cache/
+zig-cache/
+zig-out/
+zig-pkg/
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
