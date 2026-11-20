@@ -13,7 +13,12 @@ env:
   ZIG_VERSION: "0.17.1"
 
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
   build-and-release:
+    needs: ci
     name: ${{ matrix.asset_suffix }}
     strategy:
       fail-fast: false
