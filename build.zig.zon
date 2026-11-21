@@ -8,16 +8,13 @@
             .path = "../engine",
         },
         .parabellum_sdk = .{
-            .url = "git+https://github.com/parabellum-kernel/sdk.git?ref=v2.0.3#eb7611a187ad324beb6a05d6ab097933256706db",
-            .hash = "parabellum_sdk-2.0.3-46CU-mqTBAAQQmiqyJyQQgOMOlsPU5SoQ6PdPBoOG9d-",
+            .path = "../sdk",
         },
         .parabellum_libs = .{
-            .url = "git+https://github.com/parabellum-kernel/lib.git?ref=v2.0.2#0ec9292602c2120bf47d7116cdd0de9af7c3a298",
-            .hash = "parabellum_libs-2.0.2-xPH3YxsAEQBCJILEARCagCL5WiJffxFG6iedBQb3TclH",
+            .path = "../lib",
         },
         .parabellum_extensions = .{
-            .url = "git+https://github.com/parabellum-kernel/extension.git?ref=v2.0.3#d946e6d21940671e224d53d9f0f98a9a41a52b92",
-            .hash = "parabellum_extensions-2.0.3-rm1xwu-iBAB81wY3_ZjaO4Lnp5SdhwxVgOTwl-TZ9hXN",
+            .path = "../extension",
         },
     },
     .paths = .{
