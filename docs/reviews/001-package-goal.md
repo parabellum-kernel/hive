@@ -110,4 +110,4 @@ In a sequential packager pipeline (e.g., `["obfuscate", "pack-donut", "corp-sign
 ### Issue: Configuration Drift
 Declaring artifact names, ABI contracts, and dependency coordinates in `hive.json` while defining compilation targets and library names in `build.zig` creates dual-maintenance overhead.
 - **Improvement:**
-  - Have `hive build` generate an ephemeral `.zig-cache/hive_deps.zig` (or pass structured `-D` build options) exposing resolved `~/.hive/packages/` paths, target triples, and version metadata directly to `build.zig`, eliminating hardcoded paths or duplicated metadata in user build scripts.
+  - Have `hive build` generate an ephemeral `.zig-cache/hive_deps.zig` (or pass structured `-D` build options) exposing resolved `~/.hive/packages/` paths, target triples, and version metadata directly to `build.zig`, eliminating hardcoded paths or duplicated metadata in user build scripts
