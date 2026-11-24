@@ -207,4 +207,8 @@ test "hive_home: parseCoordinate splits group:artifact and falls back to local" 
     const c2 = hive.config.hive_home.parseCoordinate("sqlite", "local");
     try std.testing.expectEqualStrings("local", c2.group);
     try std.testing.expectEqualStrings("sqlite", c2.artifact);
+
+    const p = try hive.config.hive_home.joinPackageTargetDir(std.testing.allocator, "/tmp/pkgs", "org.parabellum.drivers:sqlite", "2.0.4", "x86_64-linux-gnu");
+    defer std.testing.allocator.free(p);
+    try std.testing.expectEqualStrings("/tmp/pkgs/org/parabellum/drivers/sqlite/2.0.4/x86_64-linux-gnu", p);
 }

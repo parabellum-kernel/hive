@@ -25,14 +25,14 @@ pub const InstallPrepareModuleService = struct {
 
         const group = mc.group orelse constants.Defaults.default_group;
         const eff_ver = try config.HiveHome.effectiveVersion(alloc, meta.version, mod_ref.snapshot);
-        const dest_target_dir = try std.fs.path.join(alloc, &.{ mod_ref.packages_dir, group, meta.name, eff_ver, mod_ref.target });
-        const dest_ver_dir = try std.fs.path.join(alloc, &.{ mod_ref.packages_dir, group, meta.name, eff_ver });
+        const dest_target_dir = try config.hive_home.joinPackageTargetDirParts(alloc, mod_ref.packages_dir, group, meta.name, eff_ver, mod_ref.target);
+        const dest_ver_dir = try config.hive_home.joinPackageVersionDirParts(alloc, mod_ref.packages_dir, group, meta.name, eff_ver);
 
         if (mod_ref.release and !mod_ref.force) {
             if (mc.artifacts.map.count() > 0) {
                 var art_it = mc.artifacts.map.iterator();
                 while (art_it.next()) |entry| {
-                    const art_dir = try std.fs.path.join(alloc, &.{ mod_ref.packages_dir, group, entry.key_ptr.*, eff_ver, mod_ref.target });
+                    const art_dir = try config.hive_home.joinPackageTargetDirParts(alloc, mod_ref.packages_dir, group, entry.key_ptr.*, eff_ver, mod_ref.target);
                     defer alloc.free(art_dir);
                     if (fs.exists(alloc, art_dir)) {
                         self.logger.err("Stable release {s}:{s}@{s} ({s}) already exists; pass --force to overwrite", .{
@@ -55,13 +55,15 @@ pub const InstallPrepareModuleService = struct {
             }
         }
 
-        const buckets = [_]types.InstallBucket{ .lib, .bin, .dist };
+        // Only library/plugin artifacts (`zig-out/lib`) and target-agnostic bundles (`zig-out/dist`)
+        // belong in `$HIVE_HOME/packages/`; application entrypoints stay in `zig-out/bin/` or `zig-out/dist/`.
+        const buckets = [_]types.InstallBucket{ .lib, .dist };
         const out = try alloc.alloc(types.InstallDirScanTask, buckets.len);
         inline for (buckets, 0..) |b, idx| {
             const sub = switch (b) {
                 .lib => constants.ZigDirs.lib,
-                .bin => constants.ZigDirs.bin,
                 .dist => constants.ZigDirs.dist,
+                .bin => unreachable,
             };
             out[idx] = .{
                 .order_index = mod_ref.order_index,

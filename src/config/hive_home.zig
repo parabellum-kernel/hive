@@ -62,7 +62,40 @@ pub fn parseCoordinate(coord: []const u8, default_group: []const u8) Coordinate 
     return .{ .group = default_group, .artifact = coord };
 }
 
-/// Resolves `<packages_dir>/<group>/<artifact>/<version>/<target>` from a `group:artifact` coordinate.
+/// Converts a dot-separated publisher group (e.g. `"org.parabellum.drivers"`)
+/// into a nested relative directory path (`"org/parabellum/drivers"`).
+pub fn groupToRelPath(alloc: std.mem.Allocator, group: []const u8) ![]u8 {
+    return try std.mem.replaceOwned(u8, alloc, group, ".", std.fs.path.sep_str);
+}
+
+/// Resolves `<packages_dir>/<group-tree>/<artifact>/<version>/`.
+pub fn joinPackageVersionDirParts(
+    alloc: std.mem.Allocator,
+    packages_dir: []const u8,
+    group: []const u8,
+    artifact: []const u8,
+    version: []const u8,
+) ![]u8 {
+    const group_rel = try groupToRelPath(alloc, group);
+    defer alloc.free(group_rel);
+    return try std.fs.path.join(alloc, &.{ packages_dir, group_rel, artifact, version });
+}
+
+/// Resolves `<packages_dir>/<group-tree>/<artifact>/<version>/<target>/`.
+pub fn joinPackageTargetDirParts(
+    alloc: std.mem.Allocator,
+    packages_dir: []const u8,
+    group: []const u8,
+    artifact: []const u8,
+    version: []const u8,
+    target: []const u8,
+) ![]u8 {
+    const group_rel = try groupToRelPath(alloc, group);
+    defer alloc.free(group_rel);
+    return try std.fs.path.join(alloc, &.{ packages_dir, group_rel, artifact, version, target });
+}
+
+/// Resolves `<packages_dir>/<group-tree>/<artifact>/<version>/<target>` from a `group:artifact` coordinate.
 pub fn joinPackageTargetDir(
     alloc: std.mem.Allocator,
     packages_dir: []const u8,
@@ -71,7 +104,7 @@ pub fn joinPackageTargetDir(
     target: []const u8,
 ) ![]u8 {
     const c = parseCoordinate(coord, constants.Defaults.default_group);
-    return try std.fs.path.join(alloc, &.{ packages_dir, c.group, c.artifact, version, target });
+    return try joinPackageTargetDirParts(alloc, packages_dir, c.group, c.artifact, version, target);
 }
 
 /// Computes the canonical SHA-256 hex fingerprint of a build configuration.

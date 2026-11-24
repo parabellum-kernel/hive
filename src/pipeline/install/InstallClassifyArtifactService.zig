@@ -39,8 +39,8 @@ pub const InstallClassifyArtifactService = struct {
             }
             const mid = matched orelse return null;
             artifact_id = mid;
-            dest_target_dir = try std.fs.path.join(alloc, &.{ entry.packages_dir, entry.group, mid, entry.effective_version, entry.target });
-            dest_ver_dir = try std.fs.path.join(alloc, &.{ entry.packages_dir, entry.group, mid, entry.effective_version });
+            dest_target_dir = try config.hive_home.joinPackageTargetDirParts(alloc, entry.packages_dir, entry.group, mid, entry.effective_version, entry.target);
+            dest_ver_dir = try config.hive_home.joinPackageVersionDirParts(alloc, entry.packages_dir, entry.group, mid, entry.effective_version);
         }
 
         const dest_base = if (classified.target_agnostic) dest_ver_dir else dest_target_dir;

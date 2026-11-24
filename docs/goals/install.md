@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-The `install` goal writes packaged artifacts (`.so` dynamic libraries, `.a` static archives, and/or executables + `manifest.json`) from a project's local `zig-out/` into the **default local Artifact Repository** (`~/.hive/packages/`, overridable via `--artifact-repository-dir` or `HIVE_HOME`), making them immediately consumable by other local projects and `hive package` assemblies.
+The `install` goal writes reusable library/plugin artifacts (`.so` dynamic libraries, `.a` static archives, `-sources.tar.gz` / `-docs.tar.gz` bundles, and `manifest.json`) from a project's local `zig-out/` into the **default local Artifact Repository** (`~/.hive/packages/`, overridable via `--artifact-repository-dir` or `HIVE_HOME`), making them immediately consumable by other local projects and `hive package` assemblies. Application binaries with entrypoints (`zig-out/bin/` and `zig-out/dist/` executables) are never installed into `$HIVE_HOME/packages/`.
 
 Just like remote artifact repositories used by `publish` and `fetch`, `~/.hive/packages/` is a standard **Artifact Repository** following the exact same coordinate layout.
 
