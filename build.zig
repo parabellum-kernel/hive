@@ -29,7 +29,7 @@ pub fn build(b: *std.Build) void {
     const trace_jsonl_mod = ext_dep.module("ext_trace_jsonl");
 
     const build_opts = b.addOptions();
-    build_opts.addOption([]const u8, "version", "2.0.3");
+    build_opts.addOption([]const u8, "version", @import("build.zig.zon").version);
     const build_opts_mod = build_opts.createModule();
 
     const hive_mod = b.createModule(.{
