@@ -22,6 +22,7 @@ pub const InstallScanDirService = struct {
             if (ent.kind != .file) continue;
             try out.append(alloc, .{
                 .order_index = scan.order_index,
+                .repo_dir = try alloc.dupe(u8, scan.repo_dir),
                 .module_name = try alloc.dupe(u8, scan.module_name),
                 .effective_version = try alloc.dupe(u8, scan.effective_version),
                 .target = try alloc.dupe(u8, scan.target),

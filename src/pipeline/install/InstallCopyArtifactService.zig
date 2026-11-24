@@ -23,6 +23,7 @@ pub const InstallCopyArtifactService = struct {
 
         return .{
             .order_index = task.order_index,
+            .repo_dir = try alloc.dupe(u8, task.repo_dir),
             .module_name = try alloc.dupe(u8, task.module_name),
             .effective_version = try alloc.dupe(u8, task.effective_version),
             .target = try alloc.dupe(u8, task.target),

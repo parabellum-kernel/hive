@@ -23,6 +23,11 @@ pub const BuildDiscoverModulesService = struct {
         defer loaded_cfg.deinit();
         const cfg = loaded_cfg.value();
 
+        var home = try config.HiveHome.resolve(alloc, env, .{
+            .artifact_repository_dir = if (inputs.artifact_repository_dir.len > 0) inputs.artifact_repository_dir else null,
+        });
+        defer home.deinit(alloc);
+
         const resolved_target = if (std.mem.eql(u8, inputs.target, constants.Defaults.native_target) or inputs.target.len == 0)
             env.nativeTargetTriple()
         else
@@ -42,8 +47,12 @@ pub const BuildDiscoverModulesService = struct {
                     .repo_dir = try std.fs.path.join(alloc, &.{ canonical_root, mod_rel }),
                     .optimize = try alloc.dupe(u8, inputs.optimize),
                     .target = try alloc.dupe(u8, resolved_target),
+                    .cpu = try alloc.dupe(u8, inputs.cpu),
                     .linkage = try alloc.dupe(u8, inputs.linkage),
+                    .lto = inputs.lto,
+                    .bundle_compiler_rt = inputs.bundle_compiler_rt,
                     .verify_abi = inputs.verify_abi,
+                    .packages_dir = try alloc.dupe(u8, home.packages_dir),
                     .extra_args_packed = try alloc.dupe(u8, inputs.extra_args_packed),
                 });
                 idx += 1;
@@ -54,8 +63,12 @@ pub const BuildDiscoverModulesService = struct {
                 .repo_dir = try alloc.dupe(u8, canonical_root),
                 .optimize = try alloc.dupe(u8, inputs.optimize),
                 .target = try alloc.dupe(u8, resolved_target),
+                .cpu = try alloc.dupe(u8, inputs.cpu),
                 .linkage = try alloc.dupe(u8, inputs.linkage),
+                .lto = inputs.lto,
+                .bundle_compiler_rt = inputs.bundle_compiler_rt,
                 .verify_abi = inputs.verify_abi,
+                .packages_dir = try alloc.dupe(u8, home.packages_dir),
                 .extra_args_packed = try alloc.dupe(u8, inputs.extra_args_packed),
             });
         }

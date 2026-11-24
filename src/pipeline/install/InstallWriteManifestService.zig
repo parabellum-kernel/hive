@@ -42,11 +42,21 @@ pub const InstallWriteManifestService = struct {
                 };
             }
 
+            var build_meta = config.hive_home.LoadedBuildMeta.loadFromRepo(alloc, fs, first.repo_dir);
+            defer build_meta.deinit();
+            const deps = try config.hive_home.collectManifestDependencies(alloc, fs, first.repo_dir);
+            defer config.hive_home.freeManifestDependencies(alloc, deps);
+
+            const installed_at = try config.hive_home.formatUtcIso8601Now(alloc);
+            defer alloc.free(installed_at);
+
             const manifest = config.PackageManifest{
                 .name = first.module_name,
                 .version = first.effective_version,
                 .target = first.target,
-                .installed_at = "2026-11-19T00:00:00Z",
+                .installed_at = installed_at,
+                .build_config = build_meta.value(),
+                .dependencies = deps,
                 .artifacts = arts,
             };
 

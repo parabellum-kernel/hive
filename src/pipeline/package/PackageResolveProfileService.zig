@@ -16,7 +16,6 @@ pub const PackageResolveProfileService = struct {
 
     pub fn execute(_: *PackageResolveProfileService, alloc: std.mem.Allocator, mod_ref: types.PackageModuleRef) !types.PackagePlanTask {
         const fs = @import("parabellum_platform").fs.nativeFs();
-        const env = @import("parabellum_platform").env.nativeEnv();
 
         var mod_cfg = try config.LoadedHiveConfig.loadFromDir(alloc, fs, mod_ref.repo_dir);
         defer mod_cfg.deinit();
@@ -24,6 +23,7 @@ pub const PackageResolveProfileService = struct {
         const meta = try build_types.resolveProjectNameAndVersion(alloc, fs, mod_ref.repo_dir, mc.name, mc.version);
 
         var fmt_val: config.hive_json.PackageFormat = if (mc.packaging) |p| p.default_format else .so;
+        var resolved_target: []const u8 = mod_ref.target;
         var strip = mod_ref.strip;
         var lto = mod_ref.lto;
         var sources = mod_ref.sources or (if (mc.packaging) |p| p.sources else false);
@@ -36,6 +36,9 @@ pub const PackageResolveProfileService = struct {
             if (mod_ref.profile_name.len > 0) {
                 if (pkg.profiles.map.get(mod_ref.profile_name)) |prof| {
                     if (prof.format) |pf| fmt_val = pf;
+                    if (!mod_ref.target_explicit) {
+                        if (prof.target) |pt| resolved_target = pt;
+                    }
                     if (prof.strip) |ps| strip = strip or ps;
                     if (prof.lto) |pl| lto = lto or pl;
                     if (prof.sources) |psrc| sources = sources or psrc;
@@ -57,7 +60,7 @@ pub const PackageResolveProfileService = struct {
         }
 
         const dist_dir = try std.fs.path.join(alloc, &.{ mod_ref.repo_dir, constants.ZigDirs.zig_out, constants.ZigDirs.dist });
-        const out_filename = try types.formatOutputFilename(alloc, env, meta.name, meta.version, mod_ref.target, fmt_val);
+        const out_filename = try types.formatOutputFilename(alloc, meta.name, meta.version, resolved_target, fmt_val);
         defer alloc.free(out_filename);
         const output_path = try std.fs.path.join(alloc, &.{ dist_dir, out_filename });
 
@@ -66,7 +69,7 @@ pub const PackageResolveProfileService = struct {
             .repo_dir = try alloc.dupe(u8, mod_ref.repo_dir),
             .module_name = meta.name,
             .version = meta.version,
-            .target = try alloc.dupe(u8, mod_ref.target),
+            .target = try alloc.dupe(u8, resolved_target),
             .format = @tagName(fmt_val),
             .strip = strip,
             .lto = lto,

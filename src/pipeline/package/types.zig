@@ -30,6 +30,7 @@ pub const PackageModuleRef = struct {
     profile_name: []const u8,
     verify_abi: bool,
     target: []const u8,
+    target_explicit: bool = false,
     packages_dir: []const u8,
 };
 
@@ -67,13 +68,16 @@ pub const PackageAssembled = struct {
 
 pub const PackageResult = struct {
     order_index: i64,
+    repo_dir: []const u8,
     module_name: []const u8,
     version: []const u8,
     target: []const u8,
+    format: []const u8,
     dist_dir: []const u8,
     output_path: []const u8,
     sha256: []const u8,
     size_bytes: i64,
+    sidecars_packed: []const u8 = "",
 };
 
 pub const PackageSummarizeInputs = struct {
@@ -89,17 +93,54 @@ pub fn lessThanPackageResult(_: void, a: PackageResult, b: PackageResult) bool {
     return a.order_index < b.order_index;
 }
 
+pub const TargetFamily = enum {
+    elf,
+    macho,
+    coff,
+};
+
+/// Derives the binary object format family from a Zig target triple.
+pub fn targetFamily(target: []const u8) TargetFamily {
+    if (target.len == 0 or std.mem.eql(u8, target, constants.Defaults.native_target)) {
+        return switch (@import("builtin").os.tag) {
+            .macos, .ios, .tvos, .watchos => .macho,
+            .windows => .coff,
+            else => .elf,
+        };
+    }
+    if (std.mem.indexOf(u8, target, "windows") != null) return .coff;
+    if (std.mem.indexOf(u8, target, "macos") != null or
+        std.mem.indexOf(u8, target, "darwin") != null or
+        std.mem.indexOf(u8, target, "ios") != null) return .macho;
+    return .elf;
+}
+
+pub fn targetExeExt(target: []const u8) []const u8 {
+    return if (targetFamily(target) == .coff) ".exe" else "";
+}
+
+pub fn targetSharedLibPrefix(target: []const u8) []const u8 {
+    return if (targetFamily(target) == .coff) "" else "lib";
+}
+
+pub fn targetSharedLibExt(target: []const u8) []const u8 {
+    return switch (targetFamily(target)) {
+        .coff => constants.ArtifactExts.dll,
+        .macho => constants.ArtifactExts.dylib,
+        .elf => constants.ArtifactExts.so,
+    };
+}
+
 pub fn formatOutputFilename(
     alloc: std.mem.Allocator,
-    env: @import("parabellum_platform").PlatformEnv,
     name: []const u8,
     version: []const u8,
     target: []const u8,
     fmt: config.hive_json.PackageFormat,
 ) ![]u8 {
     return switch (fmt) {
-        .bin => try std.fmt.allocPrint(alloc, "{s}{s}", .{ name, env.exeExt() }),
-        .so => try std.fmt.allocPrint(alloc, "{s}{s}{s}", .{ env.sharedLibPrefix(), name, env.sharedLibExt() }),
+        .bin => try std.fmt.allocPrint(alloc, "{s}{s}", .{ name, targetExeExt(target) }),
+        .so => try std.fmt.allocPrint(alloc, "{s}{s}{s}", .{ targetSharedLibPrefix(target), name, targetSharedLibExt(target) }),
         .tar => try std.fmt.allocPrint(alloc, "{s}-{s}-{s}.tar.gz", .{ name, version, target }),
     };
 }

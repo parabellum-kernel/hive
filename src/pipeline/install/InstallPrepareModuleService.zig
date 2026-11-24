@@ -48,6 +48,7 @@ pub const InstallPrepareModuleService = struct {
             };
             out[idx] = .{
                 .order_index = mod_ref.order_index,
+                .repo_dir = try alloc.dupe(u8, mod_ref.repo_dir),
                 .module_name = try alloc.dupe(u8, meta.name),
                 .effective_version = try alloc.dupe(u8, eff_ver),
                 .target = try alloc.dupe(u8, mod_ref.target),

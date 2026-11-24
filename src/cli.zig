@@ -137,7 +137,10 @@ pub const FetchFlag = enum {
 pub const BuildFlag = enum {
     optimize,
     target,
+    cpu,
     linkage,
+    lto,
+    bundle_compiler_rt,
     verify_abi,
     no_verify_abi,
 
@@ -217,6 +220,7 @@ pub const PublishFlag = enum {
 
 pub const PackageFlag = enum {
     format,
+    target,
     strip,
     lto,
     sources,
@@ -333,7 +337,10 @@ pub fn buildCliApp(alloc: std.mem.Allocator) !sdk_cli.CliApp {
             .build => &.{
                 sdk_cli.OptionSpec.fromEnum(BuildFlag.optimize, null, .value, "<mode>", "Debug | ReleaseSafe | ReleaseFast | ReleaseSmall"),
                 sdk_cli.OptionSpec.fromEnum(BuildFlag.target, null, .value, "<triple>", "Cross-compilation Zig target triple"),
+                sdk_cli.OptionSpec.fromEnum(BuildFlag.cpu, null, .value, "<model>", "Target CPU model (default: baseline)"),
                 sdk_cli.OptionSpec.fromEnum(BuildFlag.linkage, null, .value, "<kind>", "static | dynamic | both"),
+                sdk_cli.OptionSpec.fromEnum(BuildFlag.lto, null, .flag, null, "Enable link-time optimization (bitcode)"),
+                sdk_cli.OptionSpec.fromEnum(BuildFlag.bundle_compiler_rt, null, .flag, null, "Bundle compiler-rt into static archives (default: false)"),
                 sdk_cli.OptionSpec.fromEnum(BuildFlag.verify_abi, null, .flag, null, "Verify ABI binary format & contracts (default: true)"),
                 sdk_cli.OptionSpec.fromEnum(BuildFlag.no_verify_abi, null, .flag, null, "Skip ABI contract verification"),
             },
@@ -357,6 +364,7 @@ pub fn buildCliApp(alloc: std.mem.Allocator) !sdk_cli.CliApp {
             },
             .package => &.{
                 sdk_cli.OptionSpec.fromEnum(PackageFlag.format, null, .value, "<fmt>", "bin | so | tar"),
+                sdk_cli.OptionSpec.fromEnum(PackageFlag.target, null, .value, "<triple>", "Target Zig triple (default: native)"),
                 sdk_cli.OptionSpec.fromEnum(PackageFlag.strip, null, .flag, null, "Strip debug symbols from deliverable"),
                 sdk_cli.OptionSpec.fromEnum(PackageFlag.lto, null, .flag, null, "Enable link-time optimization"),
                 sdk_cli.OptionSpec.fromEnum(PackageFlag.sources, null, .flag, null, "Also produce <name>-sources.tar.gz"),

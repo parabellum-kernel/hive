@@ -30,6 +30,7 @@ pub const InstallBucket = enum {
 
 pub const InstallDirScanTask = struct {
     order_index: i64,
+    repo_dir: []const u8,
     module_name: []const u8,
     effective_version: []const u8,
     target: []const u8,
@@ -41,6 +42,7 @@ pub const InstallDirScanTask = struct {
 
 pub const InstallRawEntry = struct {
     order_index: i64,
+    repo_dir: []const u8,
     module_name: []const u8,
     effective_version: []const u8,
     target: []const u8,
@@ -53,6 +55,7 @@ pub const InstallRawEntry = struct {
 
 pub const InstallArtifactTask = struct {
     order_index: i64,
+    repo_dir: []const u8,
     module_name: []const u8,
     effective_version: []const u8,
     target: []const u8,
@@ -66,6 +69,7 @@ pub const InstallArtifactTask = struct {
 
 pub const InstallArtifactResult = struct {
     order_index: i64,
+    repo_dir: []const u8,
     module_name: []const u8,
     effective_version: []const u8,
     target: []const u8,

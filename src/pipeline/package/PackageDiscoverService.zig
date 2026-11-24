@@ -28,7 +28,8 @@ pub const PackageDiscoverService = struct {
         });
         defer home.deinit(alloc);
 
-        const resolved_target = if (std.mem.eql(u8, inputs.target, constants.Defaults.native_target) or inputs.target.len == 0)
+        const target_explicit = inputs.target.len > 0 and !std.mem.eql(u8, inputs.target, constants.Defaults.native_target);
+        const resolved_target = if (!target_explicit)
             env.nativeTargetTriple()
         else
             inputs.target;
@@ -54,6 +55,7 @@ pub const PackageDiscoverService = struct {
                     .profile_name = try alloc.dupe(u8, inputs.profile),
                     .verify_abi = inputs.verify_abi,
                     .target = try alloc.dupe(u8, resolved_target),
+                    .target_explicit = target_explicit,
                     .packages_dir = try alloc.dupe(u8, home.packages_dir),
                 });
                 idx += 1;
@@ -71,6 +73,7 @@ pub const PackageDiscoverService = struct {
                 .profile_name = try alloc.dupe(u8, inputs.profile),
                 .verify_abi = inputs.verify_abi,
                 .target = try alloc.dupe(u8, resolved_target),
+                .target_explicit = target_explicit,
                 .packages_dir = try alloc.dupe(u8, home.packages_dir),
             });
         }

@@ -37,6 +37,19 @@ pub const FetchResolveService = struct {
         else
             inputs.target;
 
+        // Fail fast if local transitive manifests already exhibit a version conflict.
+        const resolved_deps = config.dep_graph.resolveTransitiveDependencies(
+            alloc,
+            fs,
+            home.packages_dir,
+            resolved_target,
+            cfg,
+        ) catch |err| {
+            self.logger.err("Dependency conflict detected in '{s}': {s}", .{ inputs.project_dir, @errorName(err) });
+            return err;
+        };
+        defer config.dep_graph.freeResolvedDeps(alloc, resolved_deps);
+
         var tasks: std.ArrayListUnmanaged(types.FetchDepTask) = .empty;
         errdefer tasks.deinit(alloc);
 

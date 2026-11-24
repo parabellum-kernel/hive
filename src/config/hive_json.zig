@@ -49,12 +49,20 @@ pub const PackageFormat = enum {
     tar,
 };
 
+pub const PackagerMode = enum {
+    transform,
+    sidecar,
+};
+
 pub const PackagerSpec = struct {
+    mode: PackagerMode = .transform,
+    outputs: []const []const u8 = &.{},
     command: []const []const u8 = &.{},
 };
 
 pub const ProfileSpec = struct {
     format: ?PackageFormat = null,
+    target: ?[]const u8 = null,
     strip: ?bool = null,
     lto: ?bool = null,
     sources: ?bool = null,
@@ -78,6 +86,7 @@ pub const HiveJsonSchema = struct {
     modules: []const []const u8 = &.{},
     repositories: []const RepositorySpec = &.{},
     dependencies: std.json.ArrayHashMap(DependencySpec) = .{},
+    dependency_overrides: std.json.ArrayHashMap(DependencySpec) = .{},
     abi: ?AbiSpec = null,
     docs: ?DocsSpec = null,
     @"test": ?TestSpec = null,

@@ -8,6 +8,7 @@ pub const ArtifactKind = enum {
     bin,
     sources,
     docs,
+    sidecar,
 };
 
 pub const ManifestArtifact = struct {
@@ -18,13 +19,136 @@ pub const ManifestArtifact = struct {
     zon_hash: ?[]const u8 = null,
 };
 
+pub const BuildConfigFingerprint = struct {
+    zig_version: []const u8,
+    optimize: []const u8,
+    cpu: []const u8 = constants.Defaults.baseline_cpu,
+    lto: bool = false,
+    bundle_compiler_rt: bool = false,
+    config_hash: []const u8,
+};
+
+pub const ManifestDependency = struct {
+    name: []const u8,
+    version: []const u8,
+};
+
 pub const PackageManifest = struct {
     name: []const u8,
     version: []const u8,
     target: []const u8,
     installed_at: []const u8,
+    build_config: ?BuildConfigFingerprint = null,
+    dependencies: []const ManifestDependency = &.{},
     artifacts: []const ManifestArtifact = &.{},
 };
+
+/// Computes the canonical SHA-256 hex fingerprint of a build configuration.
+pub fn computeBuildConfigHash(
+    zig_version: []const u8,
+    optimize: []const u8,
+    cpu: []const u8,
+    lto: bool,
+    bundle_compiler_rt: bool,
+) [64]u8 {
+    var hasher = std.crypto.hash.sha2.Sha256.init(.{});
+    hasher.update(zig_version);
+    hasher.update("|");
+    hasher.update(optimize);
+    hasher.update("|");
+    hasher.update(cpu);
+    hasher.update("|");
+    hasher.update(if (lto) "1" else "0");
+    hasher.update("|");
+    hasher.update(if (bundle_compiler_rt) "1" else "0");
+    var digest: [32]u8 = undefined;
+    hasher.final(&digest);
+    return std.fmt.bytesToHex(digest, .lower);
+}
+
+pub const LoadedBuildMeta = struct {
+    parsed: ?std.json.Parsed(BuildConfigFingerprint) = null,
+
+    pub fn value(self: *const LoadedBuildMeta) ?BuildConfigFingerprint {
+        if (self.parsed) |p| return p.value;
+        return null;
+    }
+
+    pub fn deinit(self: *LoadedBuildMeta) void {
+        if (self.parsed) |*p| p.deinit();
+    }
+
+    pub fn loadFromRepo(alloc: std.mem.Allocator, fs: platform.PlatformFs, repo_dir: []const u8) LoadedBuildMeta {
+        const meta_path = std.fs.path.join(alloc, &.{ repo_dir, constants.ZigDirs.dot_zig_cache, constants.HivePaths.hive_build_meta }) catch return .{};
+        defer alloc.free(meta_path);
+        if (!fs.exists(alloc, meta_path)) return .{};
+        const bytes = fs.readFileAlloc(alloc, meta_path, 256 * 1024) catch return .{};
+        defer alloc.free(bytes);
+        const parsed = std.json.parseFromSlice(BuildConfigFingerprint, alloc, bytes, .{
+            .ignore_unknown_fields = true,
+            .allocate = .alloc_always,
+        }) catch return .{};
+        return .{ .parsed = parsed };
+    }
+};
+
+pub fn collectManifestDependencies(
+    alloc: std.mem.Allocator,
+    fs: platform.PlatformFs,
+    repo_dir: []const u8,
+) ![]ManifestDependency {
+    const hive_json = @import("hive_json.zig");
+    var loaded_cfg = try hive_json.LoadedHiveConfig.loadFromDir(alloc, fs, repo_dir);
+    defer loaded_cfg.deinit();
+    const cfg = loaded_cfg.value();
+
+    var deps: std.ArrayListUnmanaged(ManifestDependency) = .empty;
+    errdefer {
+        for (deps.items) |d| {
+            alloc.free(d.name);
+            alloc.free(d.version);
+        }
+        deps.deinit(alloc);
+    }
+
+    var it = cfg.dependencies.map.iterator();
+    while (it.next()) |entry| {
+        const name = entry.key_ptr.*;
+        const eff_ver = if (cfg.dependency_overrides.map.get(name)) |ov| ov.version else entry.value_ptr.version;
+        try deps.append(alloc, .{
+            .name = try alloc.dupe(u8, name),
+            .version = try alloc.dupe(u8, eff_ver),
+        });
+    }
+    return try deps.toOwnedSlice(alloc);
+}
+
+pub fn freeManifestDependencies(alloc: std.mem.Allocator, deps: []ManifestDependency) void {
+    for (deps) |d| {
+        alloc.free(d.name);
+        alloc.free(d.version);
+    }
+    alloc.free(deps);
+}
+
+/// Formats the current UTC wall-clock time as an ISO-8601 timestamp (`YYYY-MM-DDTHH:MM:SSZ`).
+pub fn formatUtcIso8601Now(alloc: std.mem.Allocator) ![]u8 {
+    var threaded: std.Io.Threaded = .init_single_threaded;
+    const ts = std.Io.Clock.real.now(threaded.io()).toSeconds();
+    const secs: u64 = if (ts >= 0) @intCast(ts) else 0;
+    const epoch_secs = std.time.epoch.EpochSeconds{ .secs = secs };
+    const year_day = epoch_secs.getEpochDay().calculateYearDay();
+    const month_day = year_day.calculateMonthDay();
+    const day_secs = epoch_secs.getDaySeconds();
+    return try std.fmt.allocPrint(alloc, "{d:0>4}-{d:0>2}-{d:0>2}T{d:0>2}:{d:0>2}:{d:0>2}Z", .{
+        year_day.year,
+        month_day.month.numeric(),
+        month_day.day_index + 1,
+        day_secs.getHoursIntoDay(),
+        day_secs.getMinutesIntoHour(),
+        day_secs.getSecondsIntoMinute(),
+    });
+}
 
 pub const TemplateVarSpec = struct {
     required: bool = false,

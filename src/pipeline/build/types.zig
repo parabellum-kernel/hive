@@ -26,8 +26,12 @@ pub const BuildInputs = struct {
     project_dir: []const u8 = ".",
     optimize: []const u8 = @tagName(OptimizeMode.Debug),
     target: []const u8 = constants.Defaults.native_target,
+    cpu: []const u8 = constants.Defaults.baseline_cpu,
     linkage: []const u8 = @tagName(LinkageMode.both),
+    lto: bool = false,
+    bundle_compiler_rt: bool = false,
     verify_abi: bool = true,
+    artifact_repository_dir: []const u8 = "",
     module_filter: []const u8 = "",
     extra_args_packed: []const u8 = "",
 };
@@ -37,8 +41,12 @@ pub const BuildModuleRef = struct {
     repo_dir: []const u8,
     optimize: []const u8,
     target: []const u8,
+    cpu: []const u8,
     linkage: []const u8,
+    lto: bool,
+    bundle_compiler_rt: bool,
     verify_abi: bool,
+    packages_dir: []const u8,
     extra_args_packed: []const u8,
 };
 

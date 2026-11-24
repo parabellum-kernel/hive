@@ -20,6 +20,7 @@ pub const InstallClassifyArtifactService = struct {
 
         return .{
             .order_index = entry.order_index,
+            .repo_dir = try alloc.dupe(u8, entry.repo_dir),
             .module_name = try alloc.dupe(u8, entry.module_name),
             .effective_version = try alloc.dupe(u8, entry.effective_version),
             .target = try alloc.dupe(u8, entry.target),

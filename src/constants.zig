@@ -44,6 +44,8 @@ pub const HivePaths = struct {
     pub const hive_json = "hive.json";
     pub const build_zig = "build.zig";
     pub const build_zig_zon = "build.zig.zon";
+    pub const hive_deps_zig = "hive_deps.zig";
+    pub const hive_build_meta = "hive_build_meta.json";
     pub const checksums_file = "SHA256SUMS.txt";
     pub const snapshot_suffix = "-snapshot";
 
@@ -77,6 +79,7 @@ pub const Defaults = struct {
     pub const docs_step = "docs";
     pub const git_bin = "git";
     pub const native_target = "native";
+    pub const baseline_cpu = "baseline";
 };
 
 /// Centralized binary/library file extensions.
@@ -101,6 +104,9 @@ pub const TestSteps = struct {
     pub const filter_prefix = "-Dtest-filter=";
     pub const optimize_prefix = "-Doptimize=";
     pub const target_prefix = "-Dtarget=";
+    pub const cpu_prefix = "-Dcpu=";
+    pub const lto_prefix = "-Dlto=";
+    pub const bundle_compiler_rt_prefix = "-Dbundle-compiler-rt=";
     pub const zig_bin = "zig";
     pub const zig_build_cmd = "build";
     pub const help_flag = "--help";
