@@ -82,7 +82,7 @@ pub fn collectStaticArchives(
     defer config.dep_graph.freeResolvedDeps(alloc, resolved_deps);
 
     for (resolved_deps) |dep| {
-        const dep_dir = try std.fs.path.join(alloc, &.{ task.packages_dir, dep.name, dep.version, task.target });
+        const dep_dir = try config.hive_home.joinPackageTargetDir(alloc, task.packages_dir, dep.name, dep.version, task.target);
         defer alloc.free(dep_dir);
         if (fs.listDir(alloc, dep_dir)) |entries| {
             defer platform.PlatformFs.freeDirEntries(alloc, entries);

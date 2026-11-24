@@ -26,11 +26,13 @@ fn loadDepManifest(
     alloc: std.mem.Allocator,
     fs: platform.PlatformFs,
     packages_dir: []const u8,
-    name: []const u8,
+    coord: []const u8,
     version: []const u8,
     target: []const u8,
 ) ?std.json.Parsed(hive_home.PackageManifest) {
-    const manifest_path = std.fs.path.join(alloc, &.{ packages_dir, name, version, target, constants.HivePaths.manifest_file }) catch return null;
+    const dir = hive_home.joinPackageTargetDir(alloc, packages_dir, coord, version, target) catch return null;
+    defer alloc.free(dir);
+    const manifest_path = std.fs.path.join(alloc, &.{ dir, constants.HivePaths.manifest_file }) catch return null;
     defer alloc.free(manifest_path);
     if (!fs.exists(alloc, manifest_path)) return null;
     const bytes = fs.readFileAlloc(alloc, manifest_path, 1024 * 1024) catch return null;

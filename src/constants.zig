@@ -80,6 +80,7 @@ pub const Defaults = struct {
     pub const git_bin = "git";
     pub const native_target = "native";
     pub const baseline_cpu = "baseline";
+    pub const default_group = "local";
 };
 
 /// Centralized binary/library file extensions.

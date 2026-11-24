@@ -19,11 +19,15 @@ pub const InstallCopyArtifactService = struct {
         defer alloc.free(data);
 
         const sha = build_types.computeSha256Hex(data);
+        if (std.fs.path.dirname(task.dest_path)) |dir| {
+            try fs.mkdirAll(alloc, dir);
+        }
         try fs.atomicWriteFile(alloc, task.dest_path, data, task.executable);
 
         return .{
             .order_index = task.order_index,
             .repo_dir = try alloc.dupe(u8, task.repo_dir),
+            .group = try alloc.dupe(u8, task.group),
             .module_name = try alloc.dupe(u8, task.module_name),
             .effective_version = try alloc.dupe(u8, task.effective_version),
             .target = try alloc.dupe(u8, task.target),

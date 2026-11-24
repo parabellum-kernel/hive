@@ -9,23 +9,24 @@
 ```text
 ~/.hive/
 ├── packages/
-│   └── <name>/
-│       ├── <version>/                      # Stable release (immutable per target)
-│       │   ├── <artifact>-sources.tar.gz   # Target-agnostic source tarball for `build.zig.zon` (optional)
-│       │   ├── <artifact>-docs.tar.gz      # Target-agnostic HTML autodoc bundle (optional)
-│       │   ├── manifest.json               # Optional index for target-agnostic bundles (sha256, zon_hash)
-│       │   └── <target>/                   # Canonical Zig target triple (e.g. x86_64-linux-gnu)
-│       │       ├── <artifact>.so           # Dynamic shared library (.so / .dylib / .dll, optional)
-│       │       ├── <artifact>.a            # Static archive (.a / .lib) for `hive package` (optional)
-│       │       ├── <binary>                # Standalone executable (optional)
-│       │       └── manifest.json           # Target metadata, sha256 & artifact index
-│       └── <version>-snapshot/             # Local dev snapshot (mutable, local-first)
-│           ├── <artifact>-sources.tar.gz
-│           ├── <artifact>-docs.tar.gz
-│           └── <target>/
-│               ├── <artifact>.so
-│               ├── <artifact>.a
-│               └── manifest.json
+│   └── <group>/                            # Publisher group (e.g. org.parabellum, default: local)
+│       └── <artifact>/
+│           ├── <version>/                  # Stable release (immutable per target)
+│           │   ├── <artifact>-sources.tar.gz   # Target-agnostic source tarball for `build.zig.zon` (optional)
+│           │   ├── <artifact>-docs.tar.gz      # Target-agnostic HTML autodoc bundle (optional)
+│           │   ├── manifest.json               # Optional index for target-agnostic bundles (sha256, zon_hash)
+│           │   └── <target>/                   # Canonical Zig target triple (e.g. x86_64-linux-gnu)
+│           │       ├── <artifact>.so           # Dynamic shared library (.so / .dylib / .dll, optional)
+│           │       ├── <artifact>.a            # Static archive (.a / .lib) for `hive package` (optional)
+│           │       ├── <binary>                # Standalone executable (optional)
+│           │       └── manifest.json           # Target metadata, build_config, dependencies, sha256 & artifact index
+│           └── <version>-snapshot/             # Local dev snapshot (mutable, local-first)
+│               ├── <artifact>-sources.tar.gz
+│               ├── <artifact>-docs.tar.gz
+│               └── <target>/
+│                   ├── <artifact>.so
+│                   ├── <artifact>.a
+│                   └── manifest.json
 └── templates/
     └── <template-name>/                    # Cached Git or local project archetype (`hive init`)
         ├── template.json                   # Variable declarations & defaults
@@ -39,7 +40,7 @@
 ## 2. `packages/` Rules & `manifest.json`
 
 ### Semantics
-- **Flat coordinates with target isolation**: No artificial type subdirectories (`drivers/`, `extensions/`, `engines/`). Every package lives uniformly at `~/.hive/packages/<name>/<version>[-snapshot]/<target>/`, where `<target>` is the resolved canonical Zig target triple (e.g. `x86_64-linux-gnu`, `aarch64-macos-none`, `x86_64-windows-gnu`).
+- **Publisher-scoped flat coordinates with target isolation**: No artificial type subdirectories (`drivers/`, `extensions/`, `engines/`). Every artifact lives uniformly at `~/.hive/packages/<group>/<artifact>/<version>[-snapshot]/<target>/` (with `<group>` defaulting to `local` when omitted in `hive.json`), where `<target>` is the resolved canonical Zig target triple (e.g. `x86_64-linux-gnu`, `aarch64-macos`, `x86_64-windows-gnu`).
 - **Standard filenames per target**: Inside `<target>/`, binaries keep their standard platform names (`lib<name>.so`/`.dylib`/`.dll`, `lib<name>.a`/`.lib`, `<binary>`), allowing linkers and `dlopen` to consume `<target>/` directly without renaming.
 - **Target-agnostic bundles**: `-sources.tar.gz` and `-docs.tar.gz` live at the `<version>[-snapshot]/` root so they are not duplicated across architectures.
 - **Dual artifacts**: A single `<target>/` directory may contain both `.so` (for dynamic loading) and `.a` (for monolithic static linking in `hive package`), plus binaries if applicable.
@@ -52,10 +53,22 @@
 
 ```json
 {
+  "group": "org.parabellum",
   "name": "libgit",
   "version": "1.0.0",
   "target": "x86_64-linux-gnu",
-  "installed_at": "2026-11-19T16:00:00Z",
+  "installed_at": "2026-11-24T13:00:00Z",
+  "build_config": {
+    "zig_version": "0.17.1",
+    "optimize": "ReleaseFast",
+    "cpu": "baseline",
+    "lto": false,
+    "bundle_compiler_rt": false,
+    "config_hash": "ffebb1234b21765c000b9b69bfe1aaf26612084e530b0adbf5b7690c0c7f1c0d"
+  },
+  "dependencies": [
+    { "name": "org.parabellum:core", "version": "1.0.0" }
+  ],
   "artifacts": [
     {
       "file": "libgit.so",

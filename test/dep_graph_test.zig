@@ -5,18 +5,20 @@ fn writeTestManifest(
     alloc: std.mem.Allocator,
     fs: hive.platform.PlatformFs,
     packages_dir: []const u8,
-    name: []const u8,
+    coord: []const u8,
     version: []const u8,
     target: []const u8,
     deps: []const hive.config.hive_home.ManifestDependency,
     build_config: ?hive.config.hive_home.BuildConfigFingerprint,
 ) !void {
-    const dir = try std.fs.path.join(alloc, &.{ packages_dir, name, version, target });
+    const parsed = hive.config.hive_home.parseCoordinate(coord, hive.constants.Defaults.default_group);
+    const dir = try hive.config.hive_home.joinPackageTargetDir(alloc, packages_dir, coord, version, target);
     defer alloc.free(dir);
     try fs.mkdirAll(alloc, dir);
 
     const manifest = hive.config.PackageManifest{
-        .name = name,
+        .group = parsed.group,
+        .name = parsed.artifact,
         .version = version,
         .target = target,
         .installed_at = "2026-11-23T00:00:00Z",
@@ -195,4 +197,14 @@ test "cli: build command parses --lto, --cpu, and --bundle-compiler-rt" {
     try std.testing.expect(parsed.hasFlag(hive.cli.BuildFlag.lto.flagName()));
     try std.testing.expect(parsed.hasFlag(hive.cli.BuildFlag.bundle_compiler_rt.flagName()));
     try std.testing.expectEqualStrings("znver4", parsed.getValue(hive.cli.BuildFlag.cpu.flagName()).?);
+}
+
+test "hive_home: parseCoordinate splits group:artifact and falls back to local" {
+    const c1 = hive.config.hive_home.parseCoordinate("org.parabellum.drivers:sqlite", "local");
+    try std.testing.expectEqualStrings("org.parabellum.drivers", c1.group);
+    try std.testing.expectEqualStrings("sqlite", c1.artifact);
+
+    const c2 = hive.config.hive_home.parseCoordinate("sqlite", "local");
+    try std.testing.expectEqualStrings("local", c2.group);
+    try std.testing.expectEqualStrings("sqlite", c2.artifact);
 }

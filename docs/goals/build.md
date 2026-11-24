@@ -15,7 +15,10 @@ The `build` goal compiles one or more Zig projects using `zig build`, discovers 
 | `target` | `path \| repo-name \| all` | Current directory | Project or workspace repos to build. |
 | `--optimize` | `Debug \| ReleaseSafe \| ReleaseFast \| ReleaseSmall` | `Debug` | Passed through to `zig build -Doptimize=<mode>`. |
 | `--target` | `string` (Zig target triple) | `native` | Cross-compilation target (Linux, macOS, Windows across architectures, e.g. `x86_64-linux-gnu`, `aarch64-macos-none`, `x86_64-windows-gnu`) passed to `zig build -Dtarget=<triple>`. |
+| `--cpu` | `string` | `baseline` | Target CPU model passed to `zig build -Dcpu=<model>` (when not `baseline`). |
 | `--linkage` | `static \| dynamic \| both` | `both` | Artifact linkage to produce: `.a` static archives (required by `hive package`), `.so` shared libraries, or both. |
+| `--lto` | `bool` | `false` | Record LTO bitcode mode in `.zig-cache/hive_deps.zig` and `build_config` fingerprint for downstream `package` validation. |
+| `--bundle-compiler-rt` | `bool` | `false` | Record whether static archives bundle `compiler-rt` (default `false` for safe multi-archive composition). |
 | `--verify-abi` | `bool` | `true` | Inspect produced `.so` files to verify exported manifest symbols and ABI version compatibility. |
 | `--parallel` (`-j`) | `uint` | CPU count / `1` | Maximum number of independent repositories built concurrently in workspace mode. |
 | `--extra-args` | `[]string` | `[]` | Additional flags forwarded verbatim to `zig build`. |
@@ -27,8 +30,9 @@ The `build` goal compiles one or more Zig projects using `zig build`, discovers 
 1. **Resolve Project Metadata**:
    - Parse `build.zig.zon` (via `std.zon`) in each target repository to extract `.name`, `.version`, and `.dependencies`.
    - In workspace mode, compute a **topological sort** of repositories based on local dependency edges (e.g., `core` → `lib-net`, `lib-db`, `engine` → `app`, `cli`). Detect and abort on dependency cycles.
-2. **Invoke `zig build`**:
-   - Run `zig build -Doptimize=<optimize> [-Dtarget=<target>] [extra-args...]` in each repository's root directory.
+2. **Generate Build Metadata & Invoke `zig build`**:
+   - Write `.zig-cache/hive_deps.zig` (exposing `name`, `version`, `target`, `optimize`, `cpu`, `lto`, `bundle_compiler_rt`, `packages_dir`, and resolved `dependencies` paths honoring `dependency_overrides`) and `.zig-cache/hive_build_meta.json` (`BuildConfigFingerprint`).
+   - Run `zig build -Doptimize=<optimize> [-Dtarget=<target>] [-Dcpu=<cpu>] [extra-args...]` in each repository's root directory.
    - Stream stderr/stdout clearly prefixed by repository name in workspace mode.
    - On non-zero exit code, record failure and halt downstream dependent repositories (while optionally letting independent branches finish).
 3. **Discover Produced Artifacts**:

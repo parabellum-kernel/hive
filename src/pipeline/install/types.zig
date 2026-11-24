@@ -31,9 +31,11 @@ pub const InstallBucket = enum {
 pub const InstallDirScanTask = struct {
     order_index: i64,
     repo_dir: []const u8,
+    group: []const u8,
     module_name: []const u8,
     effective_version: []const u8,
     target: []const u8,
+    packages_dir: []const u8,
     src_dir: []const u8,
     dest_target_dir: []const u8,
     dest_ver_dir: []const u8,
@@ -43,9 +45,11 @@ pub const InstallDirScanTask = struct {
 pub const InstallRawEntry = struct {
     order_index: i64,
     repo_dir: []const u8,
+    group: []const u8,
     module_name: []const u8,
     effective_version: []const u8,
     target: []const u8,
+    packages_dir: []const u8,
     src_dir: []const u8,
     dest_target_dir: []const u8,
     dest_ver_dir: []const u8,
@@ -56,6 +60,7 @@ pub const InstallRawEntry = struct {
 pub const InstallArtifactTask = struct {
     order_index: i64,
     repo_dir: []const u8,
+    group: []const u8,
     module_name: []const u8,
     effective_version: []const u8,
     target: []const u8,
@@ -70,6 +75,7 @@ pub const InstallArtifactTask = struct {
 pub const InstallArtifactResult = struct {
     order_index: i64,
     repo_dir: []const u8,
+    group: []const u8,
     module_name: []const u8,
     effective_version: []const u8,
     target: []const u8,
@@ -91,5 +97,7 @@ pub const InstallOutputs = struct {
 
 pub fn lessThanInstallResult(_: void, a: InstallArtifactResult, b: InstallArtifactResult) bool {
     if (a.order_index != b.order_index) return a.order_index < b.order_index;
+    const dir_ord = std.mem.order(u8, a.dest_dir, b.dest_dir);
+    if (dir_ord != .eq) return dir_ord == .lt;
     return std.mem.order(u8, a.file_name, b.file_name) == .lt;
 }

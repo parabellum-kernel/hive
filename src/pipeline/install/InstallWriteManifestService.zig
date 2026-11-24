@@ -26,7 +26,10 @@ pub const InstallWriteManifestService = struct {
         while (i < sorted.len) {
             const first = sorted[i];
             var end = i + 1;
-            while (end < sorted.len and sorted[end].order_index == first.order_index) : (end += 1) {}
+            while (end < sorted.len and
+                sorted[end].order_index == first.order_index and
+                std.mem.eql(u8, sorted[end].dest_dir, first.dest_dir)) : (end += 1)
+            {}
 
             const group = sorted[i..end];
             var arts = try alloc.alloc(config.hive_home.ManifestArtifact, group.len);
@@ -51,6 +54,7 @@ pub const InstallWriteManifestService = struct {
             defer alloc.free(installed_at);
 
             const manifest = config.PackageManifest{
+                .group = first.group,
                 .name = first.module_name,
                 .version = first.effective_version,
                 .target = first.target,
@@ -70,8 +74,9 @@ pub const InstallWriteManifestService = struct {
             var line_buf: [512]u8 = undefined;
             const msg = std.fmt.bufPrint(
                 &line_buf,
-                "hive install: {s}@{s} ({s}) -> {s}/ ({d} artifact{s})\n",
+                "hive install: {s}:{s}@{s} ({s}) -> {s}/ ({d} artifact{s})\n",
                 .{
+                    first.group,
                     first.module_name,
                     first.effective_version,
                     first.target,

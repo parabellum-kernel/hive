@@ -13,19 +13,47 @@ pub const InstallClassifyArtifactService = struct {
     logger: Logger,
     services: platform.PlatformServices,
 
-    pub fn execute(_: *InstallClassifyArtifactService, alloc: std.mem.Allocator, entry: types.InstallRawEntry) !?types.InstallArtifactTask {
+    pub fn execute(self: *InstallClassifyArtifactService, alloc: std.mem.Allocator, entry: types.InstallRawEntry) !?types.InstallArtifactTask {
         const bucket = std.meta.stringToEnum(types.InstallBucket, entry.bucket) orelse return null;
         const classified = classifyEntry(bucket, entry.file_name) orelse return null;
-        const dest_base = if (classified.target_agnostic) entry.dest_ver_dir else entry.dest_target_dir;
+
+        var loaded_cfg = try config.LoadedHiveConfig.loadFromDir(alloc, self.services.filesystem, entry.repo_dir);
+        defer loaded_cfg.deinit();
+        const cfg = loaded_cfg.value();
+
+        var artifact_id: []const u8 = entry.module_name;
+        var dest_target_dir: []const u8 = entry.dest_target_dir;
+        var dest_ver_dir: []const u8 = entry.dest_ver_dir;
+
+        if (cfg.artifacts.map.count() > 0) {
+            var matched: ?[]const u8 = null;
+            var it = cfg.artifacts.map.iterator();
+            while (it.next()) |kv| {
+                for (kv.value_ptr.*) |prefix| {
+                    if (std.mem.startsWith(u8, entry.file_name, prefix)) {
+                        matched = kv.key_ptr.*;
+                        break;
+                    }
+                }
+                if (matched != null) break;
+            }
+            const mid = matched orelse return null;
+            artifact_id = mid;
+            dest_target_dir = try std.fs.path.join(alloc, &.{ entry.packages_dir, entry.group, mid, entry.effective_version, entry.target });
+            dest_ver_dir = try std.fs.path.join(alloc, &.{ entry.packages_dir, entry.group, mid, entry.effective_version });
+        }
+
+        const dest_base = if (classified.target_agnostic) dest_ver_dir else dest_target_dir;
 
         return .{
             .order_index = entry.order_index,
             .repo_dir = try alloc.dupe(u8, entry.repo_dir),
-            .module_name = try alloc.dupe(u8, entry.module_name),
+            .group = try alloc.dupe(u8, entry.group),
+            .module_name = try alloc.dupe(u8, artifact_id),
             .effective_version = try alloc.dupe(u8, entry.effective_version),
             .target = try alloc.dupe(u8, entry.target),
             .src_path = try std.fs.path.join(alloc, &.{ entry.src_dir, entry.file_name }),
-            .dest_dir = try alloc.dupe(u8, entry.dest_target_dir),
+            .dest_dir = try alloc.dupe(u8, dest_target_dir),
             .dest_path = try std.fs.path.join(alloc, &.{ dest_base, entry.file_name }),
             .file_name = try alloc.dupe(u8, entry.file_name),
             .kind = classified.kind,

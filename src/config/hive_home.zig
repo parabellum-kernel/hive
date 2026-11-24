@@ -34,6 +34,7 @@ pub const ManifestDependency = struct {
 };
 
 pub const PackageManifest = struct {
+    group: []const u8 = constants.Defaults.default_group,
     name: []const u8,
     version: []const u8,
     target: []const u8,
@@ -42,6 +43,36 @@ pub const PackageManifest = struct {
     dependencies: []const ManifestDependency = &.{},
     artifacts: []const ManifestArtifact = &.{},
 };
+
+pub const Coordinate = struct {
+    group: []const u8,
+    artifact: []const u8,
+};
+
+/// Parses `"<group>:<artifact>"` into `{ group, artifact }`, falling back to `default_group`
+/// (typically `"local"`) when no `:` separator is present.
+pub fn parseCoordinate(coord: []const u8, default_group: []const u8) Coordinate {
+    if (std.mem.indexOfScalar(u8, coord, ':')) |colon| {
+        const g = coord[0..colon];
+        const a = coord[colon + 1 ..];
+        if (g.len > 0 and a.len > 0) {
+            return .{ .group = g, .artifact = a };
+        }
+    }
+    return .{ .group = default_group, .artifact = coord };
+}
+
+/// Resolves `<packages_dir>/<group>/<artifact>/<version>/<target>` from a `group:artifact` coordinate.
+pub fn joinPackageTargetDir(
+    alloc: std.mem.Allocator,
+    packages_dir: []const u8,
+    coord: []const u8,
+    version: []const u8,
+    target: []const u8,
+) ![]u8 {
+    const c = parseCoordinate(coord, constants.Defaults.default_group);
+    return try std.fs.path.join(alloc, &.{ packages_dir, c.group, c.artifact, version, target });
+}
 
 /// Computes the canonical SHA-256 hex fingerprint of a build configuration.
 pub fn computeBuildConfigHash(

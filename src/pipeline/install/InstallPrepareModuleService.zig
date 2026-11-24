@@ -23,20 +23,37 @@ pub const InstallPrepareModuleService = struct {
         const meta = try build_types.resolveProjectNameAndVersion(alloc, fs, mod_ref.repo_dir, mc.name, mc.version);
         defer alloc.free(meta.version);
 
+        const group = mc.group orelse constants.Defaults.default_group;
         const eff_ver = try config.HiveHome.effectiveVersion(alloc, meta.version, mod_ref.snapshot);
-        const dest_target_dir = try std.fs.path.join(alloc, &.{ mod_ref.packages_dir, meta.name, eff_ver, mod_ref.target });
-        const dest_ver_dir = try std.fs.path.join(alloc, &.{ mod_ref.packages_dir, meta.name, eff_ver });
+        const dest_target_dir = try std.fs.path.join(alloc, &.{ mod_ref.packages_dir, group, meta.name, eff_ver, mod_ref.target });
+        const dest_ver_dir = try std.fs.path.join(alloc, &.{ mod_ref.packages_dir, group, meta.name, eff_ver });
 
-        if (mod_ref.release and !mod_ref.force and fs.exists(alloc, dest_target_dir)) {
-            self.logger.err("Stable release {s}@{s} ({s}) already exists; pass --force to overwrite", .{
-                meta.name,
-                eff_ver,
-                mod_ref.target,
-            });
-            return error.ImmutableReleaseExists;
+        if (mod_ref.release and !mod_ref.force) {
+            if (mc.artifacts.map.count() > 0) {
+                var art_it = mc.artifacts.map.iterator();
+                while (art_it.next()) |entry| {
+                    const art_dir = try std.fs.path.join(alloc, &.{ mod_ref.packages_dir, group, entry.key_ptr.*, eff_ver, mod_ref.target });
+                    defer alloc.free(art_dir);
+                    if (fs.exists(alloc, art_dir)) {
+                        self.logger.err("Stable release {s}:{s}@{s} ({s}) already exists; pass --force to overwrite", .{
+                            group,
+                            entry.key_ptr.*,
+                            eff_ver,
+                            mod_ref.target,
+                        });
+                        return error.ImmutableReleaseExists;
+                    }
+                }
+            } else if (fs.exists(alloc, dest_target_dir)) {
+                self.logger.err("Stable release {s}:{s}@{s} ({s}) already exists; pass --force to overwrite", .{
+                    group,
+                    meta.name,
+                    eff_ver,
+                    mod_ref.target,
+                });
+                return error.ImmutableReleaseExists;
+            }
         }
-
-        try fs.mkdirAll(alloc, dest_target_dir);
 
         const buckets = [_]types.InstallBucket{ .lib, .bin, .dist };
         const out = try alloc.alloc(types.InstallDirScanTask, buckets.len);
@@ -49,9 +66,11 @@ pub const InstallPrepareModuleService = struct {
             out[idx] = .{
                 .order_index = mod_ref.order_index,
                 .repo_dir = try alloc.dupe(u8, mod_ref.repo_dir),
+                .group = try alloc.dupe(u8, group),
                 .module_name = try alloc.dupe(u8, meta.name),
                 .effective_version = try alloc.dupe(u8, eff_ver),
                 .target = try alloc.dupe(u8, mod_ref.target),
+                .packages_dir = try alloc.dupe(u8, mod_ref.packages_dir),
                 .src_dir = try std.fs.path.join(alloc, &.{ mod_ref.repo_dir, constants.ZigDirs.zig_out, sub }),
                 .dest_target_dir = try alloc.dupe(u8, dest_target_dir),
                 .dest_ver_dir = try alloc.dupe(u8, dest_ver_dir),

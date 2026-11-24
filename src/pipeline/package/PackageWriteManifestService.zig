@@ -79,7 +79,12 @@ pub const PackageWriteManifestService = struct {
             const installed_at = try config.hive_home.formatUtcIso8601Now(alloc);
             defer alloc.free(installed_at);
 
+            var loaded_cfg = try config.LoadedHiveConfig.loadFromDir(alloc, fs, item.repo_dir);
+            defer loaded_cfg.deinit();
+            const pkg_group = loaded_cfg.value().group orelse constants.Defaults.default_group;
+
             const manifest = config.PackageManifest{
+                .group = pkg_group,
                 .name = item.module_name,
                 .version = item.version,
                 .target = item.target,

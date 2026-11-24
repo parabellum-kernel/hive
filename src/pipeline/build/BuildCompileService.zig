@@ -190,7 +190,7 @@ fn writeHiveDepsZig(
     while (it.next()) |entry| {
         const dep_name = entry.key_ptr.*;
         const eff_ver = if (cfg.dependency_overrides.map.get(dep_name)) |ov| ov.version else entry.value_ptr.version;
-        const dep_path = try std.fs.path.join(alloc, &.{ task.packages_dir, dep_name, eff_ver, task.target });
+        const dep_path = try config.hive_home.joinPackageTargetDir(alloc, task.packages_dir, dep_name, eff_ver, task.target);
         defer alloc.free(dep_path);
         const line = try std.fmt.allocPrint(
             alloc,

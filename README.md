@@ -26,19 +26,20 @@ Because `zig build` alone only compiles a single repository into `zig-out/`, `hi
 ```text
 ~/.hive/
 ├── packages/
-│   └── <artifact-name>/
-│       ├── <version>/                      # Stable release (immutable per target)
-│       │   ├── <artifact>-sources.tar.gz   # Target-agnostic source tarball (optional)
-│       │   ├── <artifact>-docs.tar.gz      # Target-agnostic autodoc bundle (optional)
-│       │   └── <target>/                   # Canonical Zig target triple (e.g. x86_64-linux-gnu)
-│       │       ├── lib<artifact>.so        # Dynamic runtime artifact
-│       │       ├── lib<artifact>.a         # Static archive (.o bundle) for `hive package`
-│       │       └── manifest.json           # Metadata (artifacts, sha256, target)
-│       └── <version>-snapshot/             # Local development snapshot (overwritable)
-│           └── <target>/
-│               ├── lib<artifact>.so
-│               ├── lib<artifact>.a
-│               └── manifest.json
+│   └── <group>/                            # Publisher group (e.g. org.parabellum, default: local)
+│       └── <artifact>/
+│           ├── <version>/                  # Stable release (immutable per target)
+│           │   ├── <artifact>-sources.tar.gz   # Target-agnostic source tarball (optional)
+│           │   ├── <artifact>-docs.tar.gz      # Target-agnostic autodoc bundle (optional)
+│           │   └── <target>/                   # Canonical Zig target triple (e.g. x86_64-linux-gnu)
+│           │       ├── lib<artifact>.so        # Dynamic runtime artifact
+│           │       ├── lib<artifact>.a         # Static archive (.o bundle) for `hive package`
+│           │       └── manifest.json           # Metadata (build_config, dependencies, artifacts, sha256, target)
+│           └── <version>-snapshot/             # Local development snapshot (overwritable)
+│               └── <target>/
+│                   ├── lib<artifact>.so
+│                   ├── lib<artifact>.a
+│                   └── manifest.json
 └── templates/
     └── <template-name>/                    # External Git/local project archetype (`hive init`)
         ├── template.json
@@ -46,7 +47,7 @@ Because `zig build` alone only compiles a single repository into `zig-out/`, `hi
 ```
 
 ### Key Principles
-1. **Uniform Flat Coordinates**: Plugins, drivers, extensions, libs, and the engine all live under `~/.hive/packages/<name>/<version>[-snapshot]/<target>/`.
+1. **Uniform Publisher-Scoped Coordinates**: Plugins, drivers, extensions, libs, and the engine all live under `~/.hive/packages/<group>/<artifact>/<version>[-snapshot]/<target>/`.
 2. **Dual Representation (`.so` + `.a`)**: Each versioned coordinate can store both the dynamic `.so` (for runtime loading) and the static `.a` (for monolithic assembly via `hive package`), declared in `manifest.json`.
 3. **Strict Separation of Workspace vs. Repository**:
    - `build` and `package` **never** write to `~/.hive/packages/`. They only produce outputs inside `<repo>/zig-out/`.

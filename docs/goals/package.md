@@ -14,8 +14,9 @@ The `package` goal assembles compiled static archives (`.a` / `.o`) and/or share
 |---|---|---|---|
 | `target` | `path \| repo-name \| all` | Current directory | Project or workspace target to package. |
 | `--format` | `bin \| so \| tar` | `so` (plugins) / `bin` (apps) | Output deliverable format: monolithic executable (`bin`), monolithic shared library (`so`), or compressed archive (`tar`). |
+| `--target` | `string` (Zig target triple) | `native` | Cross-compilation target triple (overrides `profile.target`; determines output filename extensions and target-family linker flags). |
 | `--strip` | `bool` | `false` | Strip debug symbols from the assembled binary or shared library. |
-| `--lto` | `bool` | `false` | Enable link-time optimization when assembling the deliverable. |
+| `--lto` | `bool` | `false` | Require LTO bitcode across all collected `.a` manifests (automatically derived when all inputs were built with `hive build --lto`; fails fast on mixed LTO/native inputs). |
 | `--sources` | `bool` | `false` | Also produce `<name>-sources.tar.gz` (respecting `.paths` from `build.zig.zon`) and record its `zon_hash` in `manifest.json`. |
 | `--docs` | `bool` | `false` | Also bundle generated `autodoc` HTML (`zig-out/docs/`) into `<name>-docs.tar.gz` and record its `sha256` in `manifest.json`. |
 | `--packager` | `string` | `null` | Name of an external post-processor/packager declared under `packaging.packagers` in `hive.json`. |
@@ -36,12 +37,15 @@ The `package` goal assembles compiled static archives (`.a` / `.o`) and/or share
     "link_libs": ["c", "pthread"],
     "packagers": {
       "corp-sign": {
-        "command": ["cosign", "sign-blob", "--output-signature", "{output}.sig", "{input}"]
+        "mode": "sidecar",
+        "outputs": ["{input}.sig"],
+        "command": ["cosign", "sign-blob", "--output-signature", "{input}.sig", "{input}"]
       }
     },
     "profiles": {
       "release-corp": {
         "format": "bin",
+        "target": "x86_64-linux-gnu",
         "strip": true,
         "packagers": ["corp-sign"]
       }
@@ -62,14 +66,19 @@ The `package` goal assembles compiled static archives (`.a` / `.o`) and/or share
      - `build` → `test` → `package` (skipping any phase excluded via `-x <goal>`).
    - If any active upstream goal fails, the pipeline halts before `hive/package` runs.
 3. **Assemble Deliverable (Post-Build Link / Bundle Stage)**:
-   - `package` never re-invokes `zig build`; it operates strictly on already-compiled outputs from `zig-out/` and `~/.hive/packages/<name>/<version>/<target>/`.
-   - Collect local `.a` (or `.lib`) archives from `zig-out/lib/` and any declared dependency static archives from `~/.hive/packages/<name>/<version>/<target>/`.
-   - **`--format bin`**: identify the archive defining the `main` entrypoint (via `packaging.entrypoint` or inspecting `.a` symbol tables; if no extra `.a`s are linked and `zig-out/bin/` already contains an executable, copy it directly) and link via `zig cc -target <target>` into a single monolithic executable (`zig-out/dist/<name>` or `zig-out/dist/<name>.exe` on Windows), wrapping plugin/module archives with `-Wl,--whole-archive ... -Wl,--no-whole-archive` (or `-Wl,-force_load` on macOS) so unreferenced `export fn` / `linksection` symbols are preserved, plus any system libraries in `packaging.link_libs`.
-   - **`--format so`**: link via `zig cc -shared -target <target>` with `--whole-archive` / `-force_load` into a single monolithic shared library (`zig-out/dist/lib<name>.so`, `lib<name>.dylib`, or `<name>.dll` depending on `<target>`).
-   - **`--format tar`**: bundle the compiled binary/libraries (`zig-out/bin/`, `zig-out/lib/`, and any runtime `.so`/`.dylib`/`.dll` dependencies) with `manifest.json` into `zig-out/dist/<name>-<version>-<target>.tar.gz`.
+   - `package` never re-invokes `zig build`; it operates strictly on already-compiled outputs from `zig-out/` and `~/.hive/packages/<group>/<artifact>/<version>/<target>/`.
+   - Resolve the transitive dependency closure (honoring `dependency_overrides` in `hive.json` and failing fast on `DependencyVersionConflict`), validate `build_config` / `lto` compatibility across collected manifests, and collect `.a` (or `.lib`) archives from `zig-out/lib/` and resolved dependency directories.
+   - **`--format bin`**: when more than one `.a` is present, require `packaging.entrypoint` in `hive.json` (single-archive builds auto-use that archive; if no `.a`s exist and `zig-out/bin/` already contains an executable, copy it directly) and link via `zig cc` (passing `-target <target>` for cross-compilation) into a single monolithic executable (`zig-out/dist/<name>` or `<name>.exe` on Windows), wrapping archives with target-family whole-archive flags:
+     - **ELF (Linux/BSD)**: `-Wl,--whole-archive ... -Wl,--no-whole-archive`
+     - **Mach-O (macOS)**: `-Wl,-force_load,<archive>` (per archive)
+     - **COFF/PE (Windows)**: `-Wl,/WHOLEARCHIVE:<archive>` (per archive)
+   - **`--format so`**: link via `zig cc -shared` with target-family whole-archive flags into a single monolithic shared library (`lib<name>.so`, `lib<name>.dylib`, or `<name>.dll`). When `abi` (`required_symbols` / `any_of_symbols`) is declared in `hive.json`, synthesize a link-time visibility script (`-Wl,--version-script=exports.map` on ELF, `-Wl,-exported_symbols_list,exports.txt` on Mach-O) so non-ABI symbols are hidden from `.dynsym`.
+   - **`--format tar`**: bundle the compiled binary/libraries (`zig-out/bin/`, `zig-out/lib/`) into `zig-out/dist/<name>-<version>-<target>.tar.gz`.
 4. **Hardening & Post-Processing**:
-   - Apply `--strip` and symbol visibility rules when requested.
-   - If `--packager <name>` or `profile.packagers` (ordered list, e.g. obfuscation → custom packer such as Donut → signing) is active, execute each configured command sequentially with `{input}` and `{output}` placeholders substituted **before** final checksums are computed.
+   - Apply `--strip` when requested.
+   - If `--packager <name>` or `profile.packagers` is active, execute each configured command sequentially with `{input}` and `{output}` placeholders substituted:
+     - `mode: "transform"` (default): updates the active deliverable path to the transformed `{output}` for downstream packagers and `manifest.json`.
+     - `mode: "sidecar"`: preserves the active deliverable path and registers declared `outputs` as auxiliary `sidecar` artifacts in `manifest.json` and `SHA256SUMS.txt`.
 5. **Verify & Emit Metadata**:
    - When `--format=so` and `--verify-abi=true`: validate the assembled `.so` against the `abi` contract declared in `hive.json` (if any).
    - Compute SHA-256 checksums (`SHA256SUMS.txt`) and write `zig-out/dist/manifest.json`.

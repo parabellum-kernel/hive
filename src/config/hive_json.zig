@@ -81,9 +81,11 @@ pub const PackagingSpec = struct {
 };
 
 pub const HiveJsonSchema = struct {
+    group: ?[]const u8 = null,
     name: ?[]const u8 = null,
     version: ?[]const u8 = null,
     modules: []const []const u8 = &.{},
+    artifacts: std.json.ArrayHashMap([]const []const u8) = .{},
     repositories: []const RepositorySpec = &.{},
     dependencies: std.json.ArrayHashMap(DependencySpec) = .{},
     dependency_overrides: std.json.ArrayHashMap(DependencySpec) = .{},

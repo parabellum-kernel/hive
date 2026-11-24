@@ -17,7 +17,7 @@ pub const FetchPrepareService = struct {
     pub fn execute(self: *FetchPrepareService, alloc: std.mem.Allocator, task: types.FetchDepTask) ![]const types.FetchArtifactTask {
         const fs = self.services.filesystem;
 
-        const dest_dir = try std.fs.path.join(alloc, &.{ task.packages_dir, task.name, task.version, task.target });
+        const dest_dir = try config.hive_home.joinPackageTargetDir(alloc, task.packages_dir, task.name, task.version, task.target);
         defer alloc.free(dest_dir);
         const manifest_path = try std.fs.path.join(alloc, &.{ dest_dir, constants.HivePaths.manifest_file });
         defer alloc.free(manifest_path);

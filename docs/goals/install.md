@@ -27,18 +27,19 @@ Every package is installed into a flat, Maven-style coordinate path with **no ar
 
 ```text
 ~/.hive/packages/
-└── <name>/
-    └── <version>[-snapshot]/
-        ├── <artifact>-sources.tar.gz   # Target-agnostic source tarball (if `--sources` was packaged)
-        ├── <artifact>-docs.tar.gz      # Target-agnostic HTML autodoc archive (if `--docs` was packaged)
-        └── <target>/                   # Canonical Zig target triple (e.g. x86_64-linux-gnu)
-            ├── <artifact>.so           # Dynamic runtime artifact (if produced)
-            ├── <artifact>.a            # Static archive (.o bundle) for `hive package` (if produced)
-            ├── <binary>                # Executable artifact (if produced)
-            └── manifest.json           # Target metadata: name, version, target, artifacts[], sha256, installed_at
+└── <group>/                            # Publisher group (e.g. org.parabellum, default: local)
+    └── <artifact>/
+        └── <version>[-snapshot]/
+            ├── <artifact>-sources.tar.gz   # Target-agnostic source tarball (if `--sources` was packaged)
+            ├── <artifact>-docs.tar.gz      # Target-agnostic HTML autodoc archive (if `--docs` was packaged)
+            └── <target>/                   # Canonical Zig target triple (e.g. x86_64-linux-gnu)
+                ├── <artifact>.so           # Dynamic runtime artifact (if produced)
+                ├── <artifact>.a            # Static archive (.o bundle) for `hive package` (if produced)
+                ├── <binary>                # Executable artifact (if produced)
+                └── manifest.json           # Target metadata: group, name, version, target, build_config, dependencies[], artifacts[]
 ```
 
-- **Coordinate resolution**: `<name>` and `<version>` are read from `hive.json` (falling back to `.name` and `.version` in `build.zig.zon`).
+- **Coordinate resolution**: `<group>` (defaulting to `local`), `<name>`, and `<version>` are read from `hive.json` (falling back to `.name` and `.version` in `build.zig.zon`). If `hive.json` declares `artifacts` (`<artifact-id> -> [<prefix>, ...]`), each matching output is installed under its own `<group>/<artifact-id>/` coordinate with a dedicated `manifest.json`.
 
 ---
 
